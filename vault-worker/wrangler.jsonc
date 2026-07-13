@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "vault-sync",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "kv_namespaces": [
+    { "binding": "VAULT_KV", "id": "d693c0e33afb4fb8963b3985f895ad6a" }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
