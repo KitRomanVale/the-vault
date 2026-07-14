@@ -584,12 +584,44 @@ const ICloud = p => /*#__PURE__*/React.createElement(Ico, {
 });
 // Gentle celebration copy. Warm but neutral — the app cheers for you
 // without pretending to know you. Toggleable in the ⋯ menu.
+// Entries are either a plain string (the app's own voice) or {t, by} for
+// quotes with an attribution line. Both kinds cycle randomly.
 const PRAISE_LINES = {
-  encourage: ["One small step. That's all this needs.", "You don't have to finish it today. Just begin.", "Look at you, choosing this. That already counts.", "No pressure. Just you and this one thing.", "Start small, start soft."],
-  logged: ["Logged. You showed up and left proof.", "Momentum, not a graveyard.", "Every note is a breadcrumb back to yourself.", "You did the thing AND wrote it down.", "Future-you just got a gift."],
-  finished: ["FINISHED. Look at that. 🎉", "You started, you struggled, you finished. That's everything.", "Done. Sealed. Yours.", "This is what finishing feels like. Remember it.", "One for the vault. Never say you have nothing to show."],
-  step: ["One step down. That's how whole things get built.", "Check. Keep going or rest — both are allowed.", "Progress, not perfection.", "That's momentum. Don't let anyone tell you it's small."],
-  worked: ["You worked on it. That's the win. That's the whole win.", "Showed up again. That's what it takes.", "Another mark on the streak.", "Didn't have to be big. You just had to touch it. And you did."]
+  encourage: ["One small step. That's all this needs.", "You don't have to finish it today. Just begin.", "Look at you, choosing this. That already counts.", "No pressure. Just you and this one thing.", "Start small, start soft.", "The door is already open. Just walk through it.", "Ten minutes counts. Two minutes counts.", {
+    t: "A journey of a thousand miles begins with a single step.",
+    by: "Lao Tzu"
+  }, {
+    t: "Whatever you can do, or dream you can, begin it.",
+    by: "Goethe"
+  }, {
+    t: "Well begun is half done.",
+    by: "Aristotle"
+  }, {
+    t: "Start where you are. Use what you have. Do what you can.",
+    by: "Arthur Ashe"
+  }],
+  logged: ["Logged. You showed up and left proof.", "Momentum, not a graveyard.", "Every note is a breadcrumb back to yourself.", "You did the thing AND wrote it down.", "Future-you just got a gift.", "Small notes, big trail.", "That's one more day this project was alive.", {
+    t: "The palest ink is better than the best memory.",
+    by: "Chinese proverb"
+  }],
+  finished: ["FINISHED. Look at that. 🎉", "You started, you struggled, you finished. That's everything.", "Done. Sealed. Yours.", "This is what finishing feels like. Remember it.", "One for the vault. Never say you have nothing to show.", "Some people never finish anything. You just did.", "Take a breath. Look at what you made.", {
+    t: "The reward of a thing well done is to have done it.",
+    by: "Ralph Waldo Emerson"
+  }],
+  step: ["One step down. That's how whole things get built.", "Check. Keep going or rest — both are allowed.", "Progress, not perfection.", "That's momentum. Don't let anyone tell you it's small.", "Brick by brick.", "The list is shorter than it was a minute ago.", {
+    t: "Great things are done by a series of small things brought together.",
+    by: "Vincent van Gogh"
+  }, {
+    t: "It does not matter how slowly you go as long as you do not stop.",
+    by: "Confucius"
+  }],
+  worked: ["You worked on it. That's the win. That's the whole win.", "Showed up again. That's what it takes.", "Another mark on the streak.", "Didn't have to be big. You just had to touch it. And you did.", "Consistency looks exactly like this.", "The project remembers you now.", {
+    t: "Dripping water hollows out stone, not through force but through persistence.",
+    by: "Ovid"
+  }, {
+    t: "Little by little, one travels far.",
+    by: "Proverb"
+  }]
 };
 const ENERGY = {
   low: {
@@ -950,6 +982,21 @@ function ProjectVault() {
   const [lastSyncedAt, setLastSyncedAt] = useState(null); // wall-clock time of the last successful sync
   const [showSyncSetup, setShowSyncSetup] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const toolsMenuRef = React.useRef(null);
+  // Close the ⋯ menu on any press outside it. pointerdown covers mouse,
+  // touch, and pen with one listener; presses inside the menu container
+  // (including the ⋯ button itself, whose own onClick handles toggling)
+  // are ignored so they don't fight the toggle.
+  useEffect(() => {
+    if (!showToolsMenu) return;
+    const onPointerDown = e => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target)) {
+        setShowToolsMenu(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [showToolsMenu]);
   const projectsRef = React.useRef(projects); // always-current mirror, safe to read from async callbacks/intervals
   const tombstonesRef = React.useRef(loadTombstones());
   useEffect(() => {
@@ -1042,12 +1089,24 @@ function ProjectVault() {
   // Small toast for step/log/worked/pick-up. Auto-dismisses. Skipped
   // entirely when celebrations are turned off in the ⋯ menu.
   const toastTimer = React.useRef(null);
+  const pickPraiseLine = lines => {
+    const entry = lines[Math.floor(Math.random() * lines.length)];
+    return typeof entry === "string" ? {
+      line: entry,
+      by: null
+    } : {
+      line: entry.t,
+      by: entry.by
+    };
+  };
   const praiseToast = (kind, projectId = null) => {
     if (!celebrationsOn) return;
     const lines = PRAISE_LINES[kind] || PRAISE_LINES.encourage;
+    const picked = pickPraiseLine(lines);
     setToast({
       kind,
-      line: lines[Math.floor(Math.random() * lines.length)],
+      line: picked.line,
+      by: picked.by,
       projectId
     });
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -1056,10 +1115,11 @@ function ProjectVault() {
   // Big modal — reserved for finishing a project.
   const celebrateFinish = (projectId = null) => {
     if (!celebrationsOn) return;
-    const lines = PRAISE_LINES.finished;
+    const picked = pickPraiseLine(PRAISE_LINES.finished);
     setCelebration({
       kind: "finished",
-      line: lines[Math.floor(Math.random() * lines.length)],
+      line: picked.line,
+      by: picked.by,
       projectId
     });
   };
@@ -1367,6 +1427,7 @@ function ProjectVault() {
       setFinishAsk(null);
       setConfirmDel(null);
       setPicked(null);
+      setShowToolsMenu(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -1514,6 +1575,7 @@ function ProjectVault() {
       alignItems: "center"
     }
   }, /*#__PURE__*/React.createElement("div", {
+    ref: toolsMenuRef,
     style: {
       position: "relative",
       display: "flex"
@@ -2577,7 +2639,13 @@ function PraiseToast({
       lineHeight: 1.5,
       fontStyle: "italic"
     }
-  }, "\"", toast.line, "\"")));
+  }, "\"", toast.line, "\""), toast.by && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: "#938A9E",
+      marginTop: 8
+    }
+  }, "— ", toast.by)));
 }
 
 // 10-second Undo escape hatch after a delete.
@@ -2815,7 +2883,13 @@ function CelebrationModal({
       lineHeight: 1.5,
       fontStyle: "italic"
     }
-  }, "\"", celebration.line, "\"")));
+  }, "\"", celebration.line, "\""), celebration.by && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#938A9E",
+      marginTop: 8
+    }
+  }, "— ", celebration.by)));
 }
 function FinishAskModal({
   project,
