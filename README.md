@@ -6,6 +6,8 @@ Everything you're making — writing, crafts, code, tiny gardens — kept safe i
 
 No accounts. No tracking. Your data lives in your browser, optionally synced through your own Cloudflare account.
 
+> **New to this kind of thing?** There's a detailed, no-jargon walkthrough in **[GUIDE.md](GUIDE.md)** — written for people who have never touched a terminal. The README below is the short version for developers.
+
 ## Features
 
 - **Energy-based filtering** — tag projects as low/medium/high energy, then ask "what can I do with the spoons I have right now?"
@@ -79,3 +81,9 @@ Deliberate choices: no build step, no framework CLI, no database — one HTML fi
 ## Costs
 
 Free for personal use. Cloudflare's free tier includes 100k Worker requests/day and 100k KV reads/day; the app's 25-second polling uses roughly 4% of that per always-open device.
+
+## Credits & license
+
+Made with care by **Kit & Roman Vale**, July 2026. 🖤
+
+The source code is released under the [MIT License](LICENSE). The Vault name, logo, original artwork, and written content are not included in the MIT License and may not be reused without permission.
