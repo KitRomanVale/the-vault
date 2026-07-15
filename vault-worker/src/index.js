@@ -19,27 +19,32 @@ function json(body, status = 200) {
   });
 }
 
-// Manual constant-time compare: iterates the full length regardless of
-// where a mismatch occurs, so how much of the token matched isn't
-// observable via timing. (crypto.timingSafeEqual, documented as a Workers
-// runtime extension, threw "is not a function" on both local dev and the
-// real deployed edge when actually tested — reverted rather than shipping
-// something that doesn't exist in this runtime.)
-function timingSafeEqual(a, b) {
-  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return mismatch === 0;
+// Constant-time token check: hash both values to fixed-length SHA-256
+// digests, then compare with the runtime's timing-safe primitive. Hashing
+// first means digests are always 32 bytes, so neither the token's length
+// nor how much of it matched leaks via timing (timingSafeEqual also
+// REQUIRES equal-length inputs — it throws otherwise).
+// Runtime note, verified by probe on workerd 2026-07: the extension lives
+// at crypto.subtle.timingSafeEqual; plain crypto.timingSafeEqual does NOT
+// exist despite some docs summaries claiming so.
+async function tokenMatches(candidate, secret) {
+  if (typeof candidate !== "string" || typeof secret !== "string" || !candidate || !secret) return false;
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest("SHA-256", enc.encode(candidate)),
+    crypto.subtle.digest("SHA-256", enc.encode(secret))
+  ]);
+  return crypto.subtle.timingSafeEqual(new Uint8Array(a), new Uint8Array(b));
 }
 
-function authorized(request, env) {
+async function authorized(request, env) {
   const header = request.headers.get("Authorization") || "";
   const headerToken = header.startsWith("Bearer ") ? header.slice(7) : "";
   // Some MCP clients (Hearthline's connector system included) call out to
   // external servers without adding custom headers, so the secret has to be
   // embeddable in the URL itself — same fallback Hearthline's own bridge uses.
   const queryToken = new URL(request.url).searchParams.get("secret") || "";
-  return timingSafeEqual(headerToken, env.AUTH_TOKEN) || timingSafeEqual(queryToken, env.AUTH_TOKEN);
+  return (await tokenMatches(headerToken, env.AUTH_TOKEN)) || (await tokenMatches(queryToken, env.AUTH_TOKEN));
 }
 
 function uid() {
@@ -65,8 +70,13 @@ function isValidVaultPayload(body) {
   return true;
 }
 
+// Spread ...p FIRST so fields this worker doesn't know about (added by a
+// newer app version) pass through untouched instead of being stripped from
+// every project on each MCP edit — that drift already ate nextStep/mood
+// once. Known fields are then re-asserted with sane defaults on top.
 function normalizeProject(p) {
   return {
+    ...p,
     id: p.id || uid(),
     title: p.title || "Untitled",
     desc: p.desc || "",
@@ -78,7 +88,9 @@ function normalizeProject(p) {
     lastTouched: p.lastTouched ?? null,
     logs: Array.isArray(p.logs) ? p.logs : [],
     workedCount: p.workedCount || 0,
-    steps: Array.isArray(p.steps) ? p.steps : []
+    steps: Array.isArray(p.steps) ? p.steps : [],
+    nextStep: typeof p.nextStep === "string" ? p.nextStep : "",
+    mood: typeof p.mood === "string" ? p.mood : ""
   };
 }
 
@@ -190,7 +202,13 @@ function createServer(env) {
     },
     async ({ title, desc, energy, mode }) => {
       const { projects, tombstones } = await loadStore(env);
-      const project = normalizeProject({ title, desc, energy, mode, created: Date.now() });
+      // New projects go to the top of the manual order: pos sorts ascending,
+      // so take a spot below the current minimum (mirrors the app's own
+      // addProject). Projects without a pos yet are simply ignored here —
+      // the app assigns them positions on its next load.
+      const positions = projects.map(p => p.pos).filter(n => typeof n === "number");
+      const topPos = (positions.length ? Math.min(...positions) : 1000) - 1000;
+      const project = normalizeProject({ title, desc, energy, mode, created: Date.now(), pos: topPos });
       await saveStore(env, [project, ...projects], tombstones);
       return text(`Added "${project.title}" to the Vault.`);
     }
@@ -322,9 +340,9 @@ function createServer(env) {
   return server;
 }
 
-function checkMcpAuth(request, env) {
+async function checkMcpAuth(request, env) {
   if (!env.AUTH_TOKEN) return json({ error: "Server misconfigured: AUTH_TOKEN not set" }, 500);
-  if (!authorized(request, env)) return json({ error: "Unauthorized" }, 401);
+  if (!(await authorized(request, env))) return json({ error: "Unauthorized" }, 401);
   return null;
 }
 
@@ -337,7 +355,7 @@ export default {
     }
 
     if (url.pathname === "/mcp" || url.pathname === "/sse") {
-      const authResponse = checkMcpAuth(request, env);
+      const authResponse = await checkMcpAuth(request, env);
       if (authResponse) return authResponse;
       const server = createServer(env);
       const handler = createMcpHandler(server);
@@ -352,7 +370,7 @@ export default {
       return json({ error: "Not found" }, 404);
     }
 
-    if (!authorized(request, env)) {
+    if (!(await authorized(request, env))) {
       return json({ error: "Unauthorized" }, 401);
     }
 

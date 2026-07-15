@@ -26,6 +26,10 @@
   button:not(:disabled){transition:filter .15s ease, transform .1s ease, box-shadow .15s ease;}
   button:not(:disabled):hover{filter:brightness(1.15);}
   button:not(:disabled):active{transform:scale(.96);}
+  @media (max-width:640px){
+    button{min-height:40px;}
+    button[aria-label]{min-width:40px;}
+  }
   @media (prefers-reduced-motion: reduce){*{animation:none!important}}
 </style>
 <script>
@@ -750,8 +754,11 @@ const STORE_VERSION = 2; // v2: added per-project updatedAt + tombstones for mer
 const TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
 // Normalize any project object so old data never breaks new features.
+// ...p is spread first so fields a newer version adds survive a round-trip
+// through this older code instead of being silently stripped.
 function normalizeProject(p) {
   return {
+    ...p,
     id: p.id || uid(),
     title: p.title || "Untitled",
     desc: p.desc || "",
@@ -765,8 +772,87 @@ function normalizeProject(p) {
     workedCount: p.workedCount || 0,
     steps: Array.isArray(p.steps) ? p.steps : [],
     nextStep: p.nextStep || "",
-    mood: p.mood || ""
+    mood: p.mood || "",
+    pos: Number.isFinite(p.pos) ? p.pos : null
   };
+}
+
+// Manual order lives in a per-project `pos` number (ascending = top first),
+// not in array order — a reorder then only touches the moved project's pos
+// and updatedAt, so it rides the per-project sync merge like any other
+// edit. Projects without a pos yet (older data, or written by an older
+// device) get slotted here: below everything that has one, in the array
+// order they arrived in. Deliberately does NOT bump updatedAt — this
+// assignment is cosmetic bookkeeping, not a user edit, and must never win
+// a merge against someone's real change.
+function withPositions(list) {
+  if (list.every(p => Number.isFinite(p.pos))) return list;
+  if (list.every(p => !Number.isFinite(p.pos))) {
+    return list.map((p, i) => ({
+      ...p,
+      pos: (i + 1) * 1000
+    }));
+  }
+  let max = Math.max(...list.filter(p => Number.isFinite(p.pos)).map(p => p.pos));
+  return list.map(p => Number.isFinite(p.pos) ? p : {
+    ...p,
+    pos: max += 1000
+  });
+}
+
+function compareIds(a, b) {
+  const left = String(a || "");
+  const right = String(b || "");
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function compareProjectsByPosition(a, b) {
+  const byPosition = (a.pos ?? Infinity) - (b.pos ?? Infinity);
+  return byPosition || compareIds(a.id, b.id);
+}
+
+// One canonical array order keeps equivalent snapshots byte-stable across
+// devices. The id tie-break also makes equal positions deterministic.
+function canonicalizeProjects(list) {
+  return [...withPositions(Array.isArray(list) ? list : [])].sort(compareProjectsByPosition);
+}
+
+function canonicalizeTombstones(list) {
+  return [...(Array.isArray(list) ? list : [])].sort((a, b) => compareIds(a && a.id, b && b.id) || (a && a.deletedAt || 0) - (b && b.deletedAt || 0));
+}
+
+// JSON key order can differ after a round-trip even when the data is equal.
+// Sorting object keys prevents that cosmetic difference from triggering a
+// remote write; array order is handled by the canonicalizers above.
+function stableJson(value) {
+  return JSON.stringify(value, (_key, item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+    return Object.keys(item).sort().reduce((sorted, key) => {
+      sorted[key] = item[key];
+      return sorted;
+    }, {});
+  });
+}
+
+function sameSyncSnapshot(aProjects, aTombstones, bProjects, bTombstones) {
+  return stableJson({
+    projects: canonicalizeProjects(aProjects),
+    tombstones: canonicalizeTombstones(aTombstones)
+  }) === stableJson({
+    projects: canonicalizeProjects(bProjects),
+    tombstones: canonicalizeTombstones(bTombstones)
+  });
+}
+
+// updatedAt normally decides a project merge. If two devices have the same
+// timestamp but different migration bookkeeping, use a symmetric tie-break
+// so both devices still choose the same winner.
+function chooseProjectWinner(localProject, remoteProject) {
+  if (!remoteProject) return localProject;
+  const localTime = localProject.updatedAt || 0;
+  const remoteTime = remoteProject.updatedAt || 0;
+  if (localTime !== remoteTime) return remoteTime > localTime ? remoteProject : localProject;
+  return stableJson(remoteProject) > stableJson(localProject) ? remoteProject : localProject;
 }
 
 // The actual next move for a project: the explicit "next tiny step" field if
@@ -780,20 +866,23 @@ function nextActionFor(p) {
   }
   return null;
 }
+function projectSearchText(p) {
+  return [p.title, p.desc, p.nextStep, p.mood, ...(p.steps || []).map(step => step.text), ...(p.logs || []).map(log => log.note)].filter(value => typeof value === "string").join("\n").toLowerCase();
+}
 function loadProjects() {
   try {
     // v2 store first
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.projects)) return parsed.projects.map(normalizeProject);
+      if (parsed && Array.isArray(parsed.projects)) return canonicalizeProjects(parsed.projects.map(normalizeProject));
     }
     // migrate v1 bare array if present
     const old = localStorage.getItem(OLD_KEY);
     if (old) {
       const arr = JSON.parse(old);
       if (Array.isArray(arr)) {
-        const migrated = arr.map(normalizeProject);
+        const migrated = canonicalizeProjects(arr.map(normalizeProject));
         saveProjects(migrated, []); // write into v2 store immediately
         return migrated;
       }
@@ -801,25 +890,29 @@ function loadProjects() {
   } catch (err) {
     console.warn("Vault load failed, starting fresh:", err);
   }
-  return SEED;
+  // SEED entries are hand-written and skip normalizeProject otherwise —
+  // without it they'd lack updatedAt and lose every sync-merge tie.
+  return canonicalizeProjects(SEED.map(normalizeProject));
 }
 function loadTombstones() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed.tombstones)) return parsed.tombstones;
+      if (Array.isArray(parsed.tombstones)) return canonicalizeTombstones(parsed.tombstones);
     }
   } catch {}
   return [];
 }
 function saveProjects(p, tombstones) {
   try {
+    const projects = canonicalizeProjects(p);
+    const orderedTombstones = canonicalizeTombstones(tombstones);
     localStorage.setItem(STORE_KEY, JSON.stringify({
       version: STORE_VERSION,
       savedAt: now(),
-      projects: p,
-      tombstones: tombstones || []
+      projects,
+      tombstones: orderedTombstones
     }));
   } catch (err) {
     console.warn("Vault save failed:", err);
@@ -832,8 +925,8 @@ function saveProjects(p, tombstones) {
 // revert an edit to a DIFFERENT project than the one that triggered the
 // sync — this keeps every project's own history independent of the others.
 function mergeVaults(remoteData, localProjects, localTombstones) {
-  const remoteProjects = (remoteData && Array.isArray(remoteData.projects) ? remoteData.projects : []).map(normalizeProject);
-  const remoteTombstones = remoteData && Array.isArray(remoteData.tombstones) ? remoteData.tombstones : [];
+  const remoteProjects = canonicalizeProjects((remoteData && Array.isArray(remoteData.projects) ? remoteData.projects : []).map(normalizeProject));
+  const remoteTombstones = canonicalizeTombstones(remoteData && Array.isArray(remoteData.tombstones) ? remoteData.tombstones : []);
   const tombById = new Map();
   for (const t of [...(localTombstones || []), ...remoteTombstones]) {
     if (!t || !t.id) continue;
@@ -847,7 +940,7 @@ function mergeVaults(remoteData, localProjects, localTombstones) {
     if (seen.has(p.id)) continue;
     seen.add(p.id);
     const remoteP = remoteById.get(p.id);
-    const winner = remoteP && (remoteP.updatedAt || 0) > (p.updatedAt || 0) ? remoteP : p;
+    const winner = chooseProjectWinner(p, remoteP);
     const tomb = tombById.get(p.id);
     if (tomb && tomb.deletedAt >= (winner.updatedAt || 0)) continue;
     merged.push(winner);
@@ -860,9 +953,9 @@ function mergeVaults(remoteData, localProjects, localTombstones) {
     merged.push(p);
   }
   const cutoff = now() - TOMBSTONE_RETENTION_MS;
-  const tombstones = Array.from(tombById.values()).filter(t => t.deletedAt > cutoff);
+  const tombstones = canonicalizeTombstones(Array.from(tombById.values()).filter(t => t.deletedAt > cutoff));
   return {
-    projects: merged,
+    projects: canonicalizeProjects(merged),
     tombstones
   };
 }
@@ -1026,16 +1119,16 @@ function ProjectVault() {
   // one merge implementation to trust.
   const syncOnce = useCallback(async cfg => {
     const remote = await pullRemote(cfg);
-    const remoteProjects = (remote && Array.isArray(remote.projects) ? remote.projects : []).map(normalizeProject);
-    const {
-      projects: merged,
-      tombstones: mergedTombs
-    } = mergeVaults(remote, projectsRef.current, tombstonesRef.current);
+    const remoteProjects = canonicalizeProjects((remote && Array.isArray(remote.projects) ? remote.projects : []).map(normalizeProject));
+    const remoteTombstones = canonicalizeTombstones(remote && Array.isArray(remote.tombstones) ? remote.tombstones : []);
+    const mergeResult = mergeVaults(remote, projectsRef.current, tombstonesRef.current);
+    const merged = canonicalizeProjects(mergeResult.projects);
+    const mergedTombs = canonicalizeTombstones(mergeResult.tombstones);
     tombstonesRef.current = mergedTombs;
     projectsRef.current = merged;
     setProjects(merged);
     saveProjects(merged, mergedTombs);
-    if (JSON.stringify(merged) !== JSON.stringify(remoteProjects)) {
+    if (!sameSyncSnapshot(merged, mergedTombs, remoteProjects, remoteTombstones)) {
       await pushRemote(cfg, {
         version: STORE_VERSION,
         savedAt: now(),
@@ -1047,9 +1140,12 @@ function ProjectVault() {
   }, []);
 
   const persist = useCallback(next => {
-    setProjects(next);
-    projectsRef.current = next;
-    saveProjects(next, tombstonesRef.current);
+    const canonicalProjects = canonicalizeProjects(next);
+    const canonicalTombstones = canonicalizeTombstones(tombstonesRef.current);
+    setProjects(canonicalProjects);
+    projectsRef.current = canonicalProjects;
+    tombstonesRef.current = canonicalTombstones;
+    saveProjects(canonicalProjects, canonicalTombstones);
     if (syncConfig) {
       setSyncStatus("syncing");
       syncOnce(syncConfig).then(markSynced).catch(() => setSyncStatus("error"));
@@ -1127,10 +1223,15 @@ function ProjectVault() {
     });
   };
   const addProject = p => {
+    // New projects take the top spot in manual order: pos sorts ascending,
+    // so go one step below the current minimum.
+    const positions = projects.map(x => x.pos).filter(n => typeof n === "number");
+    const topPos = (positions.length ? Math.min(...positions) : 1000) - 1000;
     persist([normalizeProject({
       ...p,
       id: uid(),
-      created: now()
+      created: now(),
+      pos: topPos
     }), ...projects]);
     setShowAdd(false);
   };
@@ -1245,33 +1346,45 @@ function ProjectVault() {
   const dragOverIdRef = React.useRef(null);
   const [dragOverId, setDragOverId] = useState(null);
   const [dragVisual, setDragVisual] = useState(null); // {title, x, y} while a drag is in progress
+  // Reordering edits pos values (not array order), and bumps updatedAt on
+  // whatever moved — that's what makes a reorder survive sync: the moved
+  // project carries its new pos through the per-project merge like any
+  // other edit. Array order in storage is irrelevant to display.
   const swapProjects = (idA, idB) => {
-    const list = [...projects];
-    const idxA = list.findIndex(x => x.id === idA);
-    const idxB = list.findIndex(x => x.id === idB);
-    if (idxA === -1 || idxB === -1) return;
-    [list[idxA], list[idxB]] = [list[idxB], list[idxA]];
-    persist(list);
+    const a = projects.find(x => x.id === idA);
+    const b = projects.find(x => x.id === idB);
+    if (!a || !b) return;
+    persist(projects.map(p => p.id === idA ? {
+      ...p,
+      pos: b.pos,
+      updatedAt: now()
+    } : p.id === idB ? {
+      ...p,
+      pos: a.pos,
+      updatedAt: now()
+    } : p));
   };
   const reorderProjects = (draggedId, targetId) => {
     if (!draggedId || draggedId === targetId) return;
-    const list = [...projects];
-    const fromIdx = list.findIndex(x => x.id === draggedId);
-    const origTargetIdx = list.findIndex(x => x.id === targetId);
-    if (fromIdx === -1 || origTargetIdx === -1) return;
-    const movingDown = fromIdx < origTargetIdx;
-    const [moved] = list.splice(fromIdx, 1);
-    let toIdx = list.findIndex(x => x.id === targetId);
-    if (toIdx === -1) {
-      list.splice(fromIdx, 0, moved);
-      return;
-    }
+    const moved = projects.find(x => x.id === draggedId);
+    const target = projects.find(x => x.id === targetId);
+    if (!moved || !target) return;
     // Land on the side of the target you approached from: after it when
-    // dragging down, before it when dragging up. Otherwise a downward drag
-    // always lands one slot short of where you dropped it.
-    if (movingDown) toIdx += 1;
-    list.splice(toIdx, 0, moved);
-    persist(list);
+    // dragging down, before it when dragging up. Compute the new pos as the
+    // midpoint between the target and its neighbour on that side (in the
+    // full pos-sorted list, so hidden/filtered projects keep their slots).
+    const sorted = projects.filter(x => x.id !== draggedId).sort((x, y) => x.pos - y.pos);
+    const tIdx = sorted.findIndex(x => x.id === targetId);
+    const movingDown = moved.pos < target.pos;
+    const insertIdx = movingDown ? tIdx + 1 : tIdx;
+    const prev = sorted[insertIdx - 1];
+    const next = sorted[insertIdx];
+    const newPos = prev && next ? (prev.pos + next.pos) / 2 : prev ? prev.pos + 1000 : next.pos - 1000;
+    persist(projects.map(p => p.id === draggedId ? {
+      ...p,
+      pos: newPos,
+      updatedAt: now()
+    } : p));
   };
   const startDrag = (ev, p) => {
     ev.preventDefault();
@@ -1392,7 +1505,7 @@ function ProjectVault() {
         updatedAt: now()
       };
     });
-    persist(Object.values(byId));
+    persist(withPositions(Object.values(byId)));
     setImportMsg("Imported: " + added + " new, " + updated + " updated. Nothing was lost. 🖤");
     setTimeout(() => setImportMsg(null), 5000);
   };
@@ -1441,12 +1554,16 @@ function ProjectVault() {
   if (statusFilter !== "all") shown = shown.filter(p => p.status === statusFilter);
   if (searchQuery.trim()) {
     const q = searchQuery.trim().toLowerCase();
-    shown = shown.filter(p => p.title.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q));
+    shown = shown.filter(p => projectSearchText(p).includes(q));
   }
   if (sortMode === "recent") {
     shown = [...shown].sort((a, b) => (b.lastTouched || 0) - (a.lastTouched || 0));
   } else if (sortMode === "neglected") {
     shown = [...shown].sort((a, b) => (a.lastTouched || 0) - (b.lastTouched || 0));
+  } else {
+    // Manual order = pos ascending. Null pos (shouldn't survive
+    // withPositions, but belt-and-braces) sinks to the bottom.
+    shown = [...shown].sort(compareProjectsByPosition);
   }
   return /*#__PURE__*/React.createElement(Shell, null, /*#__PURE__*/React.createElement("header", {
     style: {
@@ -3290,7 +3407,11 @@ function Modal({
     const dialog = dialogRef.current;
     const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
     const focusables = dialog ? dialog.querySelectorAll(focusableSelector) : [];
-    if (focusables.length) focusables[0].focus();else if (dialog) dialog.focus();
+    const activeElement = document.activeElement;
+    const childAlreadyFocused = dialog && activeElement && dialog.contains(activeElement) && activeElement !== dialog;
+    if (!childAlreadyFocused) {
+      if (focusables.length) focusables[0].focus();else if (dialog) dialog.focus();
+    }
     const handleKeyDown = e => {
       if (e.key !== "Tab" || !dialog) return;
       const items = dialog.querySelectorAll(focusableSelector);
