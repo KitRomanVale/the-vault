@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="54" viewBox="0 0 1200 54" fill="none" role="img">
+  <title>Gentle project care</title>
+  <defs>
+    <clipPath id="clip"><rect width="1200" height="54"/></clipPath>
+    <style>
+      .track { animation: scroll 23s linear infinite; }
+      .item { font: 700 17px 'Segoe UI', Arial, sans-serif; letter-spacing: 2.5px; }
+      @keyframes scroll { to { transform: translateX(-1200px); } }
+      @media (prefers-reduced-motion: reduce) { .track { animation: none; } }
+    </style>
+  </defs>
+  <path d="M0 1H1200M0 53H1200" stroke="#30363D"/>
+  <g clip-path="url(#clip)">
+    <g class="track">
+      <text x="0" y="34" class="item" textLength="1200" lengthAdjust="spacing"><tspan fill="#69D3B3">LOW ENERGY COUNTS</tspan><tspan fill="#484F58"> / </tspan><tspan fill="#FF8FA3">NEXT TINY STEP</tspan><tspan fill="#484F58"> / </tspan><tspan fill="#B8C0CC">PRIVATE BY DESIGN</tspan><tspan fill="#484F58"> / </tspan><tspan fill="#F2CC60">PROGRESS IS PROGRESS</tspan><tspan fill="#484F58"> / </tspan><tspan fill="#69D3B3">PICK FOR ME</tspan><tspan fill="#484F58"> / </tspan></text>
+      <text x="1200" y="34" class="item" textLength="1200" lengthAdjust="spacing"><tspan fill="#69D3B3">LOW ENERGY COUNTS</tspan><tspan fill="#484F58"> / </tspan><tspan fill="#FF8FA3">NEXT TINY STEP</tspan><tspan fill="#484F58"> / </tspan><tspan fill="#B8C0CC">PRIVATE BY DESIGN</tspan><tspan fill="#484F58"> / </tspan><tspan fill="#F2CC60">PROGRESS IS PROGRESS</tspan><tspan fill="#484F58"> / </tspan><tspan fill="#69D3B3">PICK FOR ME</tspan><tspan fill="#484F58"> / </tspan></text>
+    </g>
+  </g>
+</svg>

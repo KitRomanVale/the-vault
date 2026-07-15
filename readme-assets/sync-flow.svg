@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="290" viewBox="0 0 1200 290" fill="none" role="img">
+  <title>Optional Vault sync</title>
+  <defs>
+    <style>
+      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; letter-spacing: 1px; }
+      .copy { font: 400 19px 'Segoe UI', Arial, sans-serif; letter-spacing: 0; }
+      .signal { stroke-dasharray: 10 14; animation: flow 5s linear infinite; }
+      .back { animation-direction: reverse; animation-duration: 6.2s; }
+      .pulse { animation: pulse 2.8s ease-in-out infinite; }
+      @keyframes flow { to { stroke-dashoffset: -192; } }
+      @keyframes pulse { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .signal, .pulse { animation: none; } }
+    </style>
+  </defs>
+  <rect x="1" y="1" width="1198" height="288" rx="18" fill="#0D1117" stroke="#30363D" stroke-width="2"/>
+
+  <rect x="44" y="74" width="250" height="142" rx="12" fill="#161B22" stroke="#69D3B3" stroke-width="2"/>
+  <text x="169" y="112" text-anchor="middle" class="title" fill="#69D3B3">THIS DEVICE</text>
+  <text x="169" y="145" text-anchor="middle" class="copy" fill="#B8C0CC">browser localStorage</text>
+  <text x="169" y="171" text-anchor="middle" class="copy" fill="#8B949E">always the working copy</text>
+  <rect x="150" y="187" width="38" height="6" rx="3" fill="#69D3B3" class="pulse"/>
+
+  <path d="M294 126H450" stroke="#FF8FA3" stroke-width="2" opacity=".3"/>
+  <path d="M294 126H450" class="signal" stroke="#FF8FA3" stroke-width="3"/>
+  <path d="M450 164H294" stroke="#69D3B3" stroke-width="2" opacity=".3"/>
+  <path d="M450 164H294" class="signal back" stroke="#69D3B3" stroke-width="3"/>
+
+  <rect x="450" y="55" width="300" height="180" rx="14" fill="#161B22" stroke="#FF8FA3" stroke-width="2"/>
+  <text x="600" y="99" text-anchor="middle" class="title" fill="#FF8FA3">YOUR CLOUDFLARE</text>
+  <text x="600" y="128" text-anchor="middle" class="copy" fill="#F0F6FC">authenticated Worker</text>
+  <text x="600" y="153" text-anchor="middle" class="copy" fill="#B8C0CC">project-by-project merge</text>
+  <text x="600" y="178" text-anchor="middle" class="copy" fill="#8B949E">KV mirror + MCP endpoint</text>
+  <path d="M555 202H645" stroke="#F2CC60" stroke-width="3"/>
+
+  <path d="M750 126H906" stroke="#69D3B3" stroke-width="2" opacity=".3"/>
+  <path d="M750 126H906" class="signal" stroke="#69D3B3" stroke-width="3"/>
+  <path d="M906 164H750" stroke="#F2CC60" stroke-width="2" opacity=".3"/>
+  <path d="M906 164H750" class="signal back" stroke="#F2CC60" stroke-width="3"/>
+
+  <rect x="906" y="74" width="250" height="142" rx="12" fill="#161B22" stroke="#F2CC60" stroke-width="2"/>
+  <text x="1031" y="112" text-anchor="middle" class="title" fill="#F2CC60">OTHER DEVICES</text>
+  <text x="1031" y="145" text-anchor="middle" class="copy" fill="#B8C0CC">their own local copies</text>
+  <text x="1031" y="171" text-anchor="middle" class="copy" fill="#8B949E">merged when connected</text>
+  <rect x="1012" y="187" width="38" height="6" rx="3" fill="#F2CC60" class="pulse"/>
+</svg>
