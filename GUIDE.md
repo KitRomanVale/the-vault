@@ -16,7 +16,7 @@ When you're done with this guide you'll have:
 
 You only need Part 1 to get the app running. Part 2 shows you how to use it. Parts 3 and 4 are optional extras you can add later — or never. The app works perfectly without them.
 
-**What it costs:** nothing. The app is free, and the optional sync runs on Cloudflare's free tier, which is thousands of times more capacity than one person can use.
+**What it costs:** nothing. The app is free, and Cloudflare's free tier comfortably covers normal personal use of the optional sync.
 
 **A word on privacy:** The Vault has no account system and no tracking. Your projects are stored in your own browser. If you set up sync, they're stored in *your own* Cloudflare account — nobody else's. Your Vault's web address is technically public, so anyone who knows the exact address can open the empty app, but your project data is not stored in that website unless you choose to turn on sync.
 
@@ -59,11 +59,13 @@ To rename it:
 **Step 3 — Upload it.** In the Cloudflare dashboard:
 
 1. In the left sidebar, click **Workers & Pages**
-2. Click **Create**, then choose the **Pages** tab
-3. Choose **Upload assets** (sometimes labeled "Direct Upload")
+2. Click **Create application**
+3. Select **Get started**, then **Drag and drop your files**
 4. Give your project a name — this becomes part of your web address, so something like `my-vault` gives you `my-vault.pages.dev`. If the name is taken, Cloudflare adds a few random letters, which is fine.
 5. Drag your `vault-upload` folder into the upload box (or click to browse and select it)
 6. Click **Deploy site**
+
+Cloudflare calls this a **Direct Upload** project. Dashboard labels sometimes shift slightly, so choose the drag-and-drop option rather than Git integration.
 
 After a few seconds you'll get your address, something like `https://my-vault-abc.pages.dev`. Open it — that's your Vault, live. Bookmark it.
 
@@ -266,8 +268,10 @@ Made with care by Kit & Roman Vale, July 2026 🖤
 
 📜 License & copyright
 
-The Vault's **source code** is released under the [MIT License](LICENSE). You may use, copy, modify, and distribute the code — including for commercial purposes — as long as the original copyright and license notice are kept with it.
+The Vault's source code, documentation, and original text embedded in the source are released under the [MIT License](LICENSE). You may use, copy, modify, and distribute that material — including for commercial purposes — as long as the original copyright and license notice are kept with it.
 
 The software is provided **“as is”**, without warranty of any kind.
 
-**Copyright © 2026 Kit Vale. All rights reserved for The Vault name, logo, original artwork, and written content.** These brand and creative assets are not included in the MIT License and may not be reused without permission.
+The name **The Vault**, its logo, and original artwork are separate brand assets and are not licensed under MIT. Unmodified copies may keep them to identify the original project; modified or redistributed versions should use a different name and artwork unless Kit Vale has given written permission. See [BRAND.md](BRAND.md) for the precise scope.
+
+The attributed sayings used in celebration messages, including notes about translations and uncertain origins, are documented in [QUOTES.md](QUOTES.md).

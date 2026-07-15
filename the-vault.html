@@ -586,41 +586,44 @@ const ICloud = p => /*#__PURE__*/React.createElement(Ico, {
 // without pretending to know you. Toggleable in the ⋯ menu.
 // Entries are either a plain string (the app's own voice) or {t, by} for
 // quotes with an attribution line. Both kinds cycle randomly.
+// Attribution wording follows the research in QUOTES.md — several famous
+// versions of these lines are paraphrases or translators' wording, so the
+// credits say so ("After X") rather than implying a direct quotation.
 const PRAISE_LINES = {
   encourage: ["One small step. That's all this needs.", "You don't have to finish it today. Just begin.", "Look at you, choosing this. That already counts.", "No pressure. Just you and this one thing.", "Start small, start soft.", "The door is already open. Just walk through it.", "Ten minutes counts. Two minutes counts.", {
     t: "A journey of a thousand miles begins with a single step.",
-    by: "Lao Tzu"
+    by: "Laozi"
   }, {
     t: "Whatever you can do, or dream you can, begin it.",
-    by: "Goethe"
+    by: "W. H. Murray, after Goethe"
   }, {
     t: "Well begun is half done.",
-    by: "Aristotle"
+    by: "Greek proverb"
   }, {
     t: "Start where you are. Use what you have. Do what you can.",
     by: "Arthur Ashe"
   }],
   logged: ["Logged. You showed up and left proof.", "Momentum, not a graveyard.", "Every note is a breadcrumb back to yourself.", "You did the thing AND wrote it down.", "Future-you just got a gift.", "Small notes, big trail.", "That's one more day this project was alive.", {
     t: "The palest ink is better than the best memory.",
-    by: "Chinese proverb"
+    by: "Traditional saying"
   }],
   finished: ["FINISHED. Look at that. 🎉", "You started, you struggled, you finished. That's everything.", "Done. Sealed. Yours.", "This is what finishing feels like. Remember it.", "One for the vault. Never say you have nothing to show.", "Some people never finish anything. You just did.", "Take a breath. Look at what you made.", {
     t: "The reward of a thing well done is to have done it.",
-    by: "Ralph Waldo Emerson"
+    by: "Emerson, after Seneca"
   }],
   step: ["One step down. That's how whole things get built.", "Check. Keep going or rest — both are allowed.", "Progress, not perfection.", "That's momentum. Don't let anyone tell you it's small.", "Brick by brick.", "The list is shorter than it was a minute ago.", {
     t: "Great things are done by a series of small things brought together.",
     by: "Vincent van Gogh"
   }, {
     t: "It does not matter how slowly you go as long as you do not stop.",
-    by: "Confucius"
+    by: "After Confucius"
   }],
   worked: ["You worked on it. That's the win. That's the whole win.", "Showed up again. That's what it takes.", "Another mark on the streak.", "Didn't have to be big. You just had to touch it. And you did.", "Consistency looks exactly like this.", "The project remembers you now.", {
     t: "Dripping water hollows out stone, not through force but through persistence.",
-    by: "Ovid"
+    by: "After Ovid"
   }, {
     t: "Little by little, one travels far.",
-    by: "Proverb"
+    by: "Spanish proverb"
   }]
 };
 const ENERGY = {

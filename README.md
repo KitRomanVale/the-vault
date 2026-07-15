@@ -21,7 +21,7 @@ No accounts. No tracking. Your data lives in your browser, optionally synced thr
 - **Drag-and-drop reordering** — works with mouse and touch
 - **Cross-device sync** — optional, self-hosted on Cloudflare's free tier, with per-project conflict-safe merging
 - **Backup/restore** — export and import your whole vault as a JSON file
-- **PWA** — add to your phone's home screen, works offline
+- **Home-screen installable** — add it to your phone so it opens like an app
 - **MCP server** — let an AI assistant read and update your vault (add projects, log progress, check off steps)
 
 ## Quick start (no sync)
@@ -71,6 +71,10 @@ the-vault.html          Single-file React app (no build step)
 manifest.json           PWA manifest
 icon-*.png              App icons
 logo-header.png         In-app header logo
+GUIDE.md                Beginner-friendly setup and usage guide
+QUOTES.md               Sources and notes for attributed sayings
+LICENSE                 MIT license for code and original text
+BRAND.md                Separate name, logo, and artwork terms
 vault-worker/           Cloudflare Worker: sync API + MCP server
   src/index.js          GET/PUT /vault (KV-backed) + /mcp endpoint
   wrangler.jsonc        Worker config — put your own KV namespace id here
@@ -86,4 +90,6 @@ Free for personal use. Cloudflare's free tier includes 100k Worker requests/day 
 
 Made with care by **Kit & Roman Vale**, July 2026. 🖤
 
-The source code is released under the [MIT License](LICENSE). The Vault name, logo, original artwork, and written content are not included in the MIT License and may not be reused without permission.
+The source code, documentation, and original text embedded in the source are released under the [MIT License](LICENSE). The name **The Vault**, its logo, and original artwork are separate brand assets; see [BRAND.md](BRAND.md).
+
+Sources and attribution notes for the sayings used in celebration messages are collected in [QUOTES.md](QUOTES.md).
