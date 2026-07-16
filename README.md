@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="./GUIDE.md"><img src="https://img.shields.io/badge/START_HERE-FRIENDLY_GUIDE-69D3B3?style=for-the-badge&labelColor=0D1117" alt="Start with the friendly guide" /></a>
-  <img src="https://img.shields.io/badge/DATA-LOCAL_FIRST-FF8FA3?style=for-the-badge&labelColor=0D1117" alt="Local-first data" />
+  <a href="#privacy-and-cost"><img src="https://img.shields.io/badge/DATA-LOCAL_FIRST-FF8FA3?style=for-the-badge&labelColor=0D1117" alt="Learn about The Vault's local-first data and privacy" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/CODE-MIT-F2CC60?style=for-the-badge&labelColor=0D1117" alt="MIT licensed code" /></a>
 </p>
 
