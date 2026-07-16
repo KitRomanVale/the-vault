@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="150" viewBox="0 0 1200 150" fill="none" role="img">
-  <title>Keep what matters, begin where you are</title>
+  <title>Vale Atelier, keep what matters and begin where you are</title>
   <defs>
     <style>
       .thread { stroke-dasharray: 12 18; animation: thread 9s linear infinite; }
@@ -13,5 +13,5 @@
   <path d="M0 66C130 22 246 104 386 66C530 28 662 106 804 66C946 28 1070 90 1200 56" stroke="#30363D"/>
   <path d="M0 66C130 22 246 104 386 66C530 28 662 106 804 66C946 28 1070 90 1200 56" class="thread" stroke="#FF8FA3" stroke-width="2"/>
   <g class="mark"><rect x="591" y="57" width="18" height="18" transform="rotate(45 600 66)" fill="#69D3B3"/></g>
-  <text x="600" y="125" text-anchor="middle" class="copy" fill="#8B949E">KEEP WHAT MATTERS / BEGIN WHERE YOU ARE</text>
+  <text x="600" y="125" text-anchor="middle" class="copy" fill="#8B949E">VALE ATELIER / KEEP WHAT MATTERS / BEGIN WHERE YOU ARE</text>
 </svg>

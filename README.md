@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./readme-assets/hero.svg" width="100%" alt="The Vault. Projects, kept safe. A gentle project tracker for brains that lose track of what they love." />
+  <img src="./readme-assets/hero.svg" width="100%" alt="The Vault, a Vale Atelier project. Projects, kept safe. A gentle project tracker for brains that lose track of what they love." />
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
 
 <img src="./readme-assets/marquee.svg" width="100%" alt="Low energy counts. Next tiny step. Private by design. Progress is progress. Pick for me." />
 
-A gentle project tracker for brains that lose track of what they love.
+**The Vault is a Vale Atelier project:** a gentle project tracker for brains that lose track of what they love.
 
 Everything you are making, from writing and crafts to code and tiny gardens, stays in one place so you do not have to hold it all in your head. Choose projects by the energy you actually have, break work into tiny steps, log even the smallest progress, and receive a little kindness when you finish something.
 
@@ -137,10 +137,10 @@ vault-worker/
 
 ## Credits and license
 
-Made with care by **Kit & Roman Vale**, July 2026.
+Made with care by **Kit & Roman Vale** at **Vale Atelier**, July 2026.
 
 The source code, documentation, and original text are released under the [MIT License](LICENSE). The name **The Vault**, its logo, and original artwork are separate brand assets covered in [BRAND.md](BRAND.md).
 
 <p align="center">
-  <img src="./readme-assets/footer.svg" width="100%" alt="Keep what matters. Begin where you are." />
+  <img src="./readme-assets/footer.svg" width="100%" alt="Vale Atelier. Keep what matters. Begin where you are." />
 </p>
